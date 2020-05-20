@@ -10,19 +10,14 @@ abstract class Tetromino {
 		currentShape = (currentShape + 1) % shapes.length;
 	}
 	
-	public Coord[] currentCoords() {
+	public Coord[] currentShape() {
 		return shapes[currentShape];
 	}
 	
-	public int leftmost() {
-		int leftmost = 10;
-		for (Coord coord : shapes[currentShape]) {
-			if (leftmost > coord.x) leftmost = coord.x; 
-		}
-		
-		return leftmost;
+	public Coord[] nextShape() {
+		return shapes[(currentShape + 1) % shapes.length];
 	}
-
+	
 	public int height() {
 		int max = 0;
 		for (Coord coord : shapes[currentShape]) {

@@ -11,6 +11,10 @@ public class Tetris extends PApplet {
 	int gridX, gridY;
 	Tetromino block;
 	Tetromino nextBlock;
+	int linesCleared = 0;
+	int score;
+	long timer;
+	long speed;
 
 	Color[][] gridState;
 
@@ -21,11 +25,30 @@ public class Tetris extends PApplet {
 		this.rowCount = rowCount;
 		this.columnCount = columnCount;
 		this.gridState = new Color[columnCount][rowCount];
+		
+		for (int j = 0; j < columnCount; j++) {
+			for (int i = 0; i < rowCount; i++) {
+				gridState[j][i] = Color.EMPTY;
+			}
+		}
+		
 		this.block = newBlock();
 		this.block.x = columnCount / 2 - 1; // do something with the width
 		this.block.y = 0;
 		this.nextBlock = newBlock();
+		
+		linesCleared = 0;
+		score = 0;
+		timer = System.nanoTime();
+		speed = 1000000000L;
 
+	}
+	
+	public void settings() {
+		size(600, 800);
+		cellSize = 30;
+		rowCount = 20;
+		columnCount = 10;
 	}
 
 	private Tetromino newBlock() {
@@ -47,46 +70,7 @@ public class Tetris extends PApplet {
 		}
 	}
 
-	private void showGrid() {
-		// Filled cells
-		noStroke();
-		for (int j = 0; j < columnCount; j++) {
-			for (int i = 0; i < rowCount; i++) {
-				fill(gridState[j][i].r, gridState[j][i].g, gridState[j][i].b);
-				rect(gridX + cellSize * j, gridY + cellSize * i, cellSize, cellSize);
-			}
-		}
-
-		// Outside rectangle
-		stroke(255);
-		strokeWeight(5);
-		noFill();
-		rect(gridX - 5, gridY - 5, cellSize * columnCount + 10, cellSize * rowCount + 10);
-	}
-
-	private void showBlock() {
-		Coord[] coords = block.currentCoords();
-
-		fill(block.color.r, block.color.g, block.color.b);
-		noStroke();
-
-		for (int bcell = 0; bcell < coords.length; bcell++) {
-			int x = block.x + coords[bcell].x;
-			int y = block.y + coords[bcell].y;
-			rect(gridX + x * cellSize, gridY + y * cellSize, cellSize, cellSize);
-		}
-
-	}
-
-	public void show() {
-		showGrid();
-		showBlock();
-	}
-
 	void shiftDownAllAbove(int row) {
-		if (row == 0)
-			return;
-
 		for (int j = row - 1; j > 0; j--) {
 			for (int i = 0; i < columnCount; i++) {
 				this.gridState[i][j + 1] = this.gridState[i][j];
@@ -112,11 +96,39 @@ public class Tetris extends PApplet {
 	}
 
 	void saveBlock() {
-		for (Coord cell : this.block.currentCoords()) {
+		for (Coord cell : this.block.currentShape()) {
 			gridState[block.x + cell.x][block.y + cell.y] = this.block.color;
 		}
 	}
 
+	boolean touched() {
+		if (block.y + block.height() == rowCount)
+			return true;
+
+		for (Coord cell : this.block.currentShape()) {
+			if (gridState[block.x + cell.x][block.y + cell.y + 1] != Color.EMPTY) {
+				return true;
+			}
+		}
+		return false;
+	}
+
+	public void keyPressed() {
+		if (keyCode == UP) {
+			rotate();
+		}
+		if (keyCode == DOWN) {
+			moveDown();
+			timer = System.nanoTime(); // Easy spin
+		}
+		if (keyCode == LEFT) {
+			moveLeft();
+		}
+		if (keyCode == RIGHT) {
+			moveRight();
+		}
+	}
+	
 	void moveDown() {
 		if (block.y + this.block.height() < rowCount) {
 			block.y++;
@@ -127,7 +139,7 @@ public class Tetris extends PApplet {
 		boolean leftIsEmpty = block.x > 0;
 
 		if (leftIsEmpty) {
-			for (Coord cell : this.block.currentCoords()) {
+			for (Coord cell : this.block.currentShape()) {
 				if (gridState[block.x + cell.x - 1][block.y + cell.y] != Color.EMPTY) {
 					leftIsEmpty = false;
 					break;
@@ -144,7 +156,7 @@ public class Tetris extends PApplet {
 		boolean rightIsEmpty = block.x + this.block.width() < columnCount;
 
 		if (rightIsEmpty) {
-			for (Coord cell : this.block.currentCoords()) {
+			for (Coord cell : this.block.currentShape()) {
 				if (gridState[block.x + cell.x + 1][block.y + cell.y] != Color.EMPTY) {
 					rightIsEmpty = false;
 					break;
@@ -158,8 +170,19 @@ public class Tetris extends PApplet {
 	}
 
 	void rotate() {
-		block.rotate();
+		if(isLegal(block.nextShape())) {
+			block.rotate();
+		}
 		shiftIfNeeded(block);
+	}
+	
+	boolean isLegal(Coord[] shape) {
+		for (Coord cell : shape) {
+			if (gridState[block.x + cell.x][block.y + cell.y] != Color.EMPTY)
+				return false;
+		}
+		
+		return true;
 	}
 
 	void shiftIfNeeded(Tetromino block) {
@@ -172,54 +195,11 @@ public class Tetris extends PApplet {
 		}
 	}
 
-	boolean touched() {
-		if (block.y + block.height() == rowCount)
-			return true;
-
-		for (Coord cell : this.block.currentCoords()) {
-			if (gridState[block.x + cell.x][block.y + cell.y + 1] != Color.EMPTY) {
-				return true;
-			}
-		}
-		return false;
-	}
-
-	public void settings() {
-		size(600, 800);
-		cellSize = 30;
-		rowCount = 20;
-		columnCount = 10;
-
-		for (int j = 0; j < columnCount; j++) {
-			for (int i = 0; i < rowCount; i++) {
-				gridState[j][i] = Color.EMPTY;
-			}
-		}
-	}
-
-	public void keyPressed() {
-		if (keyCode == UP) {
-			rotate();
-		}
-		if (keyCode == DOWN) {
-			moveDown();
-			time = System.nanoTime();
-		}
-		if (keyCode == LEFT) {
-			moveLeft();
-		}
-		if (keyCode == RIGHT) {
-			moveRight();
-		}
-	}
-
-	long time = System.nanoTime();
-	long speed = 1000000000L;
 
 	void motion() {
 		long now = System.nanoTime();
-		if (now - time > speed) {
-			time = now;
+		if (now - timer > speed) {
+			timer = now;
 			moveDown();
 		}
 
@@ -256,6 +236,46 @@ public class Tetris extends PApplet {
 		rect(gridX, gridY, columnCount * cellSize, rowCount * cellSize);
 		noLoop();
 	}
+	
+	/**
+	 * Show functions
+	 */
+	
+	public void show() {
+		showGrid();
+		showBlock();
+	}
+
+	private void showGrid() {
+		// Filled cells
+		noStroke();
+		for (int j = 0; j < columnCount; j++) {
+			for (int i = 0; i < rowCount; i++) {
+				fill(gridState[j][i].r, gridState[j][i].g, gridState[j][i].b);
+				rect(gridX + cellSize * j, gridY + cellSize * i, cellSize, cellSize);
+			}
+		}
+
+		// Outside rectangle
+		stroke(255);
+		strokeWeight(5);
+		noFill();
+		rect(gridX - 5, gridY - 5, cellSize * columnCount + 10, cellSize * rowCount + 10);
+	}
+
+	private void showBlock() {
+		Coord[] coords = block.currentShape();
+
+		fill(block.color.r, block.color.g, block.color.b);
+		noStroke();
+
+		for (int bcell = 0; bcell < coords.length; bcell++) {
+			int x = block.x + coords[bcell].x;
+			int y = block.y + coords[bcell].y;
+			rect(gridX + x * cellSize, gridY + y * cellSize, cellSize, cellSize);
+		}
+
+	}
 
 	private void showNext() {
 
@@ -268,12 +288,10 @@ public class Tetris extends PApplet {
 		text("Next block :", nextBoxX, nextBoxY);
 
 		fill(nextBlock.color.r, nextBlock.color.g, nextBlock.color.b);
-		for (Coord cell : nextBlock.currentCoords()) {
+		for (Coord cell : nextBlock.currentShape()) {
 			rect(nextBoxX + cell.x * cellSize + cellSize, cellSize + nextBoxY + cell.y * cellSize, cellSize, cellSize);
 		}
 	}
-
-	int score = 0;
 
 	private void showScore() {
 
