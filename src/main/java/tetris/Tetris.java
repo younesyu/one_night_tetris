@@ -13,6 +13,7 @@ public class Tetris extends PApplet {
 	Tetromino nextBlock;
 	int linesCleared = 0;
 	int score;
+	final int[] basePoints = { 0, 40, 100, 300, 1200 };
 	long timer;
 	long speed;
 
@@ -25,25 +26,25 @@ public class Tetris extends PApplet {
 		this.rowCount = rowCount;
 		this.columnCount = columnCount;
 		this.gridState = new Color[columnCount][rowCount];
-		
+
 		for (int j = 0; j < columnCount; j++) {
 			for (int i = 0; i < rowCount; i++) {
 				gridState[j][i] = Color.EMPTY;
 			}
 		}
-		
+
 		this.block = newBlock();
 		this.block.x = columnCount / 2 - 1; // do something with the width
 		this.block.y = 0;
 		this.nextBlock = newBlock();
-		
+
 		linesCleared = 0;
 		score = 0;
 		timer = System.nanoTime();
 		speed = 1000000000L;
 
 	}
-	
+
 	public void settings() {
 		size(600, 800);
 		cellSize = 30;
@@ -128,7 +129,7 @@ public class Tetris extends PApplet {
 			moveRight();
 		}
 	}
-	
+
 	void moveDown() {
 		if (block.y + this.block.height() < rowCount) {
 			block.y++;
@@ -170,18 +171,21 @@ public class Tetris extends PApplet {
 	}
 
 	void rotate() {
-		if(isLegal(block.nextShape())) {
+		if (isLegal(block.nextShape())) {
 			block.rotate();
 		}
 		shiftIfNeeded(block);
 	}
-	
+
 	boolean isLegal(Coord[] shape) {
 		for (Coord cell : shape) {
-			if (gridState[block.x + cell.x][block.y + cell.y] != Color.EMPTY)
+			int xCell = block.x + cell.x;
+			int yCell = block.y + cell.y;
+
+			if (xCell < columnCount && yCell < rowCount 
+					&& gridState[block.x + cell.x][block.y + cell.y] != Color.EMPTY)
 				return false;
 		}
-		
 		return true;
 	}
 
@@ -195,40 +199,12 @@ public class Tetris extends PApplet {
 		}
 	}
 
-
 	void motion() {
 		long now = System.nanoTime();
 		if (now - timer > speed) {
 			timer = now;
 			moveDown();
 		}
-
-		if (touched()) {
-			saveBlock();
-			block = nextBlock;
-			nextBlock = newBlock();
-			block.x = columnCount / 2 - 1; // do something to really center
-			block.y = 0;
-			show();
-			if (touched()) {
-				gameOver();
-			}
-
-			int scored = 0;
-			for (Integer fullRow : fullLines()) {
-				for (int i = 0; i < columnCount; i++) {
-					gridState[i][fullRow] = Color.EMPTY;
-				}
-				shiftDownAllAbove(fullRow);
-				if (scored == 0)
-					scored++;
-				else
-					scored *= 5;
-			}
-
-			score += scored;
-		}
-
 	}
 
 	private void gameOver() {
@@ -236,11 +212,11 @@ public class Tetris extends PApplet {
 		rect(gridX, gridY, columnCount * cellSize, rowCount * cellSize);
 		noLoop();
 	}
-	
+
 	/**
 	 * Show functions
 	 */
-	
+
 	public void show() {
 		showGrid();
 		showBlock();
@@ -281,7 +257,7 @@ public class Tetris extends PApplet {
 
 		int nextBoxX = width / 8 + columnCount * cellSize + 20;
 		int nextBoxY = 80;
-		
+
 		fill(255);
 		textSize(20);
 		textAlign(LEFT);
@@ -311,8 +287,49 @@ public class Tetris extends PApplet {
 		showScore();
 
 		motion();
-	}
 
+		if (touched()) {
+			saveBlock();
+			block = nextBlock;
+			nextBlock = newBlock();
+			block.x = columnCount / 2 - 1;
+			block.y = 0;
+			show();
+			if (touched()) {
+				gameOver();
+			}
+			
+			int nbLinesCompleted = clearLines();
+			updateScore(nbLinesCompleted);
+		}
+
+	}
+	
+	int clearLines() {
+		int cleared = fullLines().size();
+		for (Integer fullRow : fullLines()) {
+			for (int i = 0; i < columnCount; i++) {
+				gridState[i][fullRow] = Color.EMPTY;
+			}
+			shiftDownAllAbove(fullRow);
+		}
+		
+		return cleared;
+	}
+	
+	void updateScore(int lines) {
+		int oldLevel = linesCleared / 10 + 1;
+		linesCleared += lines;
+		int newLevel = linesCleared / 10 + 1;
+		
+		int points = basePoints[lines] * newLevel;
+		score += points;
+		
+		if(oldLevel != newLevel) {
+			speed = speed / (linesCleared / 10 + 1);
+		}
+	}
+	
 	public static void main(String[] args) {
 		String[] processingArgs = { "Tetris in Processing" };
 		Tetris mySketch = new Tetris(20, 20, 30, 10, 20);
