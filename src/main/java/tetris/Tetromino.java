@@ -1,8 +1,9 @@
 package tetris;
 
 abstract class Tetromino {
+	int x, y; // position of first cell in the grid
 	Coord[][] shapes;
-	int r, g, b;
+	Color color;
 	int currentShape = 0;
 
 	void rotate() {
