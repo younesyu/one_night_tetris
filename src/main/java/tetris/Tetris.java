@@ -326,7 +326,7 @@ public class Tetris extends PApplet {
 		score += points;
 		
 		if(oldLevel != newLevel) {
-			speed = speed / (linesCleared / 10 + 1);
+			speed = speed / (linesCleared / 20 + 1);
 		}
 	}
 	
