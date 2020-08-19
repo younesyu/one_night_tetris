@@ -1,7 +1,7 @@
 <br />
 <p align="center">
   <a href="https://github.com/younesyu/one_night_tetris/">
-    <img src="tetris-screenshot.png" alt="Screenshot of the game" width="80" height="80">
+    <img src="tetris-screenshot.png" alt="Screenshot of the game">
   </a>
 
   <h3 align="center">Tetris</h3>
